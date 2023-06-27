@@ -8,21 +8,31 @@ class Creature:
     def __init__(self, x, y, speed, movement_type, energy=100, map_width=100, map_height=100):
         self.x = x
         self.y = y
-        self.speed = speed
+        #self.speed = speed
+        self.speed = Gene(speed, 0.1, 0.1)
         self.movement_type = movement_type
         self.energy = energy
         self.map_width = map_width
         self.map_height = map_height
         self.dead = False
 
+
+    def observe(self, food):
+        # Your logic to observe food here
+        pass
+
     def move(self):
         if self.movement_type == 'linear':
-            self.x += np.random.uniform(-self.speed, self.speed)
-            self.y += np.random.uniform(-self.speed, self.speed)
+            # print(type(self.speed.value))
+            print(self.speed.value)
+            # self.x += np.random.uniform(-(self.speed.value), self.speed.value)
+            # self.y += np.random.uniform(-(self.speed.value), self.speed.value)
         elif self.movement_type == 'angular':
             angle = np.random.uniform(0, 2 * np.pi)
-            self.x += self.speed * np.cos(angle)
-            self.y += self.speed * np.sin(angle)
+            # print(type(self.speed.value))
+            print(self.speed.value)
+            # self.x += self.speed.value * np.cos(angle)
+            # self.y += self.speed.value * np.sin(angle)
         
         # Keep creature within bounds
         self.x = max(0, min(self.x, self.map_width))
@@ -52,6 +62,15 @@ class Food:
         self.y = y
         self.energy = energy
 
+class Gene:
+    def __init__(self, value, mutation_rate, mutation_probability):
+        self.value = value
+        self.mutation_rate = mutation_rate
+        self.mutation_probability = mutation_probability
+
+    def mutate(self):
+        if np.random.choice([True, False], p=[self.mutation_probability, 1-self.mutation_probability]):
+            self.value += np.random.normal(scale=(self.value * self.mutation_rate))
 
 class Simulation:
     #def __init__(self, width, height, num_creatures, num_food, ticks, generations):
@@ -220,7 +239,7 @@ simulation = Simulation(
     food_energy=30,
     creature_avg_speed=30,
     creature_speed_variance=4,
-    food_spawn_rate=3,
+    food_spawn_rate=1,
     ticks=100,
     generations=10,
     max_food=1000,

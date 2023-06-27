@@ -12,3 +12,21 @@ Stable Configs:
     max_food=100
 
     Observations: usually very stable over thousands of ticks. will have to kill the simulation manually. ~60k ticks was like the highest I saw.
+
+
+6/28/2023:
+
+    width=1000,
+    height=1000,
+    initial_food=500,
+    initial_creatures=50,
+    food_energy=30,
+    creature_avg_speed=30,
+    creature_speed_variance=4,
+    food_spawn_rate=1,
+    ticks=100,
+    generations=10,
+    max_food=1000,
+    eat_radius=10
+
+    Observations: food stabilizes at around 100-300 units. population usually in the 15-35 range. simulation kept going on.
