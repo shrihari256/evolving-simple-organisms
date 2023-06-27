@@ -1,0 +1,14 @@
+Stable Configs: 
+
+6/27/2023:
+
+    initial_food=50,
+    initial_creatures=10,
+    food_energy=30,
+    creature_speed_variance=1,
+    food_spawn_rate=3,
+    ticks=100,
+    generations=10,
+    max_food=100
+
+    Observations: usually very stable over thousands of ticks. will have to kill the simulation manually. ~60k ticks was like the highest I saw.

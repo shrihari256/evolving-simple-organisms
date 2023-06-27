@@ -56,7 +56,7 @@ class Food:
 class Simulation:
     #def __init__(self, width, height, num_creatures, num_food, ticks, generations):
     def __init__(self, width, height, initial_food, initial_creatures, food_energy, creature_speed_variance,
-                 food_spawn_rate, ticks, generations, max_food):
+                 food_spawn_rate, ticks, generations, max_food,creature_avg_speed,eat_radius):
         self.width = width
         self.height = height
         self.creatures = []
@@ -68,11 +68,18 @@ class Simulation:
         self.max_food = max_food  # Maximum amount of food that can be present in the map 
         self.food_energy = food_energy  # Energy that each food gives to a creature
         self.food_spawn_rate = food_spawn_rate  # How often food spawns in ticks
+        self.total_tick = 0 # Total ticks that have passed
+        self.creature_avg_speed = creature_avg_speed # Average speed of creatures
+        self.eat_radius = eat_radius # Radius in which creatures can eat food
 
+
+        self.pop_stats = []  # List to store population count
+        self.food_stats = []  # List to store food count
+        self.tick_stats = []  # List to store tick count
 
         for _ in range(initial_creatures):
             creature = Creature(np.random.uniform(0, self.width), np.random.uniform(0, self.height), 
-                    np.random.uniform(2.5, 3.5), random.choice(['linear', 'angular']),
+                    np.random.uniform(creature_avg_speed-(creature_speed_variance/2), creature_avg_speed+(creature_speed_variance/2)), random.choice(['linear', 'angular']),
                     map_width=self.width, map_height=self.height)
 
             self.creatures.append(creature)
@@ -82,16 +89,30 @@ class Simulation:
             self.food.append(food)
 
     def run(self):
-        fig, ax = plt.subplots()
+        #fig, ax = plt.subplots()
+        fig, (ax1, ax2) = plt.subplots(2, 1)
+        ax3 = ax2.twinx()
+        #fig2, ax2 = plt.subplots()
+        ax2.set_xlabel("Time (ticks)")
+        ax2.set_ylabel("Count")
+        ax2.set_title("Population and Food over Time")
+
+        pop_line, = ax2.plot([], [], label='Population')
+        food_line, = ax2.plot([], [], label='Food')
+        ax2.legend()
 
         def animate(i):
-            ax.clear()
+            ax1.clear()
+            ax2.clear()
+            ax3.clear()
 
             self.current_tick += 1
             if self.current_tick > self.ticks:
                 self.current_tick = 0
                 self.current_generation += 1
 
+            new_creatures = []
+            
             for creature in self.creatures:
                 creature.move()
 
@@ -100,12 +121,26 @@ class Simulation:
                     distance = np.sqrt((creature.x - food.x)**2 + (creature.y - food.y)**2)
 
                     # If creature is near food, it eats it and gains energy
-                    if distance < 5:  # You can adjust this value as needed
+                    if distance < self.eat_radius:  # You can adjust this value as needed
                         creature.energy += food.energy
                         self.food.remove(food)  # Remove food from simulation
 
                 # Your logic here to reproduce
-                # Also handle mutation here
+                # Check if creature has enough energy to reproduce
+                if creature.energy >= 150:
+                    # Create a new creature at the same location
+                    offspring = Creature(creature.x, creature.y, creature.speed, creature.movement_type, energy=75, map_width=self.width, map_height=self.height)
+                    new_creatures.append(offspring)
+
+                    # Divide energy between parent and offspring
+                    creature.energy = 75
+            
+            # Add the new creatures to the simulation
+            self.creatures.extend(new_creatures)
+
+            
+
+            # Also handle mutation here
 
             # Remove dead creatures
             self.creatures = [creature for creature in self.creatures if not creature.dead] 
@@ -118,37 +153,78 @@ class Simulation:
 
             creature_x = [creature.x for creature in self.creatures]
             creature_y = [creature.y for creature in self.creatures]
-            ax.scatter(creature_x, creature_y, c='blue')
+            ax1.scatter(creature_x, creature_y, c='blue')
+
+            # Record stats
+            self.total_tick += 1
+
+            self.tick_stats.append(self.total_tick)
+            self.pop_stats.append(len(self.creatures))
+            self.food_stats.append(len(self.food))
 
             # annotate the energy levels
             for creature in self.creatures:
-                ax.annotate(f"{creature.energy:.1f}", (creature.x, creature.y))
+                ax1.annotate(f"{creature.energy:.1f}", (creature.x, creature.y))
 
             food_x = [food.x for food in self.food]
             food_y = [food.y for food in self.food]
-            ax.scatter(food_x, food_y, c='red')
+            ax1.scatter(food_x, food_y, c='red')
 
-            ax.set_title(f"Generation: {self.current_generation}, Tick: {self.current_tick}")
+            ax1.set_title(f"Epoch: {self.current_generation}, Tick: {self.current_tick}, Population: {len(self.creatures)}, Food: {len(self.food)}")
 
-            ax.set_xlim(0, self.width)
-            ax.set_ylim(0, self.height)
+            ax1.set_xlim(0, self.width)
+            ax1.set_ylim(0, self.height)
+
+            # Only plot the last 1000 data points if available
+            if len(simulation.tick_stats) >= 100:
+                ax2.plot(self.tick_stats[-100:], self.pop_stats[-100:], label='Population')
+                ax3.plot(self.tick_stats[-100:], self.food_stats[-100:], label='Food', color='red')
+    
+                #show y labels
+                ax2.set_ylabel("Population")
+                ax3.set_ylabel("Food")
+
+                #set y axis color
+                ax2.tick_params(axis='y', colors='blue')
+                ax3.tick_params(axis='y', colors='red')
+
+                ax2.set_ylim(0, max(self.pop_stats)+2)
+                ax3.set_ylim(0, max(self.food_stats)+2)
+
+
+        # def init2():
+        #     pop_line.set_data([], [])
+        #     food_line.set_data([], [])
+        #     return pop_line, food_line,
+    
+        # def animate2(i):
+        #     pop_line.set_data(range(len(simulation.pop_stats[:i+1])), simulation.pop_stats[:i+1])
+        #     food_line.set_data(range(len(simulation.food_stats[:i+1])), simulation.food_stats[:i+1])
+        #     ax2.set_xlim(0, i+1)
+        #     ax2.set_ylim(0, max(max(simulation.pop_stats), max(simulation.food_stats)))
+        #     return pop_line, food_line,
 
 
         ani = animation.FuncAnimation(fig, animate, frames=self.ticks*self.generations, interval=10)
+        # set the window size for the animation
+        fig.set_size_inches(10, 20)
+        # ani2 = animation.FuncAnimation(fig2, animate2, init_func=init2, frames=len(simulation.pop_stats), blit=True, interval=100)
         plt.show()
 
 
 simulation = Simulation(
-    width=100,
-    height=100,
-    initial_food=50,
-    initial_creatures=10,
-    food_energy=20,
-    creature_speed_variance=1,
-    food_spawn_rate=5,
+    width=1000,
+    height=1000,
+    initial_food=500,
+    initial_creatures=50,
+    food_energy=30,
+    creature_avg_speed=30,
+    creature_speed_variance=4,
+    food_spawn_rate=3,
     ticks=100,
     generations=10,
-    max_food=100
+    max_food=1000,
+    eat_radius=10
 )
 
 simulation.run()
