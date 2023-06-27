@@ -24,15 +24,19 @@ class Creature:
     def move(self):
         if self.movement_type == 'linear':
             # print(type(self.speed.value))
-            print(self.speed.value)
+            # print(self.x + self.speed.value)
+            # print(self.x + np.random.uniform(-(self.speed.value), self.speed.value))
+
+            self.x = self.x + np.random.uniform(-self.speed.value, self.speed.value)
+            self.y = self.y + np.random.uniform(-self.speed.value, self.speed.value)
             # self.x += np.random.uniform(-(self.speed.value), self.speed.value)
             # self.y += np.random.uniform(-(self.speed.value), self.speed.value)
         elif self.movement_type == 'angular':
             angle = np.random.uniform(0, 2 * np.pi)
             # print(type(self.speed.value))
-            print(self.speed.value)
-            # self.x += self.speed.value * np.cos(angle)
-            # self.y += self.speed.value * np.sin(angle)
+            # print(self.speed.value)
+            self.x += self.speed.value * np.cos(angle)
+            self.y += self.speed.value * np.sin(angle)
         
         # Keep creature within bounds
         self.x = max(0, min(self.x, self.map_width))
@@ -67,6 +71,7 @@ class Gene:
         self.value = value
         self.mutation_rate = mutation_rate
         self.mutation_probability = mutation_probability
+        print(self.value)
 
     def mutate(self):
         if np.random.choice([True, False], p=[self.mutation_probability, 1-self.mutation_probability]):
@@ -149,6 +154,8 @@ class Simulation:
                 if creature.energy >= 150:
                     # Create a new creature at the same location
                     offspring = Creature(creature.x, creature.y, creature.speed, creature.movement_type, energy=75, map_width=self.width, map_height=self.height)
+                    print("Born")
+                    print(offspring.speed.value)
                     new_creatures.append(offspring)
 
                     # Divide energy between parent and offspring
@@ -228,6 +235,7 @@ class Simulation:
         # set the window size for the animation
         fig.set_size_inches(10, 20)
         # ani2 = animation.FuncAnimation(fig2, animate2, init_func=init2, frames=len(simulation.pop_stats), blit=True, interval=100)
+        
         plt.show()
 
 
@@ -235,7 +243,7 @@ simulation = Simulation(
     width=1000,
     height=1000,
     initial_food=500,
-    initial_creatures=50,
+    initial_creatures=1,
     food_energy=30,
     creature_avg_speed=30,
     creature_speed_variance=4,
