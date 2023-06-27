@@ -1,0 +1,13 @@
+These are things yet to be added to the simulation: 
+
+
+Genes idea for the simulation:
+1. vision 
+    a. food
+    b. other creatures 
+2. movement speed - linear
+3. movement speed - angular
+4. size - energy consumption - energy storage
+5. energy consumption - stationary vs moving
+  5a. laziness - could laziness be advantageous?
+6. 
