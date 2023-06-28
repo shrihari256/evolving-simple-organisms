@@ -17,9 +17,19 @@ Genes idea for the simulation:
 10. energy given to offspring factor
 11. competition gene
 
-
+choose if it wants to reproduce or store more energy
+food death
+nutrition vs age curve for food
+movement speed should correspond to multiple ticks so that they can eat stuff that's between points
 energy expenditure proportional to magnitude of movement
 collect food if its on the way from a to b
 Seasons
+some kind of memory
 offspring and parent stick together or go separate?
 sexual reproduction
+continuous world
+
+
+For statistics / watching: 
+
+Mutation lineage tracking of some kind
