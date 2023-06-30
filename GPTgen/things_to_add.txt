@@ -16,6 +16,9 @@ Genes idea for the simulation:
 9. adventurer gene
 10. energy given to offspring factor
 11. competition gene
+12. Neural network brains for the creatures (also find some way where the brains can evolve and change but with a cost)
+    Need to make sure that the simulation doesnt get very complex
+13. Memory in the brain (possible with RNN - Recurrent Neural Network)
 
 choose if it wants to reproduce or store more energy
 food death
@@ -33,3 +36,4 @@ continuous world
 For statistics / watching: 
 
 Mutation lineage tracking of some kind
+track births, deaths, age of creatures and food
