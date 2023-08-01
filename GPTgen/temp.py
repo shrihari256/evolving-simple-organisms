@@ -8,46 +8,77 @@ import pandas as pd
 
 
 class Creature:
-    def __init__(self, x, y, speed, movement_type, energy=100, map_width=100, map_height=100):
+    def __init__(self, x, y, speed, energy=100, vision=10, map_width=100, map_height=100):
         self.x = x
         self.y = y
-        #self.speed = speed
+        
         self.speed = Gene(speed, 0.1, 0.1)
-        self.movement_type = movement_type
+        self.visibility = Gene(vision, 0.1, 0.1)
         self.energy = energy
         self.map_width = map_width
         self.map_height = map_height
         self.dead = False
         self.age = 0
+        self.target_direction = None
 
-    def observe(self, food):
-        # Your logic to observe food here
+
+    def observe(self, foods):
+        closest_food = None
+        min_distance = float('inf')
+        for food in foods:
+            distance = np.sqrt((self.x - food.x)**2 + (self.y - food.y)**2)
+            if distance < min_distance:
+                min_distance = distance
+                closest_food = food
+        
+        # Implement fog of war
+        if min_distance > self.visibility.value:
+            closest_food = None
+
+        if closest_food:
+            angle_to_food = np.arctan2(closest_food.y - self.y, closest_food.x - self.x)
+            self.target_direction = angle_to_food
+
+        # Energy expenditure for observing
+        self.energy -= 0.25+np.power(self.visibility.value,5)/(2 * np.power(25,5))
+
         pass
+        
+
 
     def move(self):
-        if self.movement_type == 'linear':
-            # print(type(self.speed.value))
-            # print(self.x + self.speed.value)
-            # print(self.x + np.random.uniform(-(self.speed.value), self.speed.value))
+        # if self.movement_type == 'linear':
+            
+        #     self.x = self.x + np.random.uniform(-self.speed.value, self.speed.value)
+        #     self.y = self.y + np.random.uniform(-self.speed.value, self.speed.value)
+            
+        # elif self.movement_type == 'angular':
+        #     angle = np.random.uniform(0, 2 * np.pi)
+        #     # print(type(self.speed.value))
+        #     # print(self.speed.value)
+        #     self.x += self.speed.value * np.cos(angle)
+        #     self.y += self.speed.value * np.sin(angle)
 
-            self.x = self.x + np.random.uniform(-self.speed.value, self.speed.value)
-            self.y = self.y + np.random.uniform(-self.speed.value, self.speed.value)
-            # self.x += np.random.uniform(-(self.speed.value), self.speed.value)
-            # self.y += np.random.uniform(-(self.speed.value), self.speed.value)
-        elif self.movement_type == 'angular':
+        if self.target_direction is not None:
+            angle = self.target_direction
+        else:
             angle = np.random.uniform(0, 2 * np.pi)
-            # print(type(self.speed.value))
-            # print(self.speed.value)
-            self.x += self.speed.value * np.cos(angle)
-            self.y += self.speed.value * np.sin(angle)
+
+        self.x += np.random.uniform(0,self.speed.value) * np.cos(angle)
+        self.y += np.random.uniform(0,self.speed.value) * np.sin(angle)
         
         # Keep creature within bounds
-        self.x = max(0, min(self.x, self.map_width))
-        self.y = max(0, min(self.y, self.map_height))
+        self.x = max(self.speed.value/2, min(self.x, self.map_width))
+        self.y = max(self.speed.value/2, min(self.y, self.map_height))
 
-        self.energy -= 1
+
+        #  lose energy according to speed
+        self.energy -= 0.25+(np.square(self.speed.value)/3200)
         if self.energy <= 0:
             self.dead = True
+
+        #   clear memory
+        self.target_direction = None
 
 
     def eat(self, food):
@@ -61,6 +92,7 @@ class Creature:
     def mutate(self):
         # Call gene mutation functions
         self.speed.mutate()
+        self.visibility.mutate()
         pass
 
 
@@ -112,11 +144,15 @@ class Simulation:
         self.pop_stats = []  # List to store population count
         self.food_stats = []  # List to store food count
         self.tick_stats = []  # List to store tick count
+        self.visibility_stats = []  # List to store visibility count
+        self.oldest_age = 0  # Oldest age of a creature in the simulation
+        self.mean_age_stats = []  # mean age of creatures in the simulation
+        self.mean_age = 0  # mean age of creatures in the simulation
 
         for _ in range(initial_creatures):
             creature = Creature(np.random.uniform(0, self.width), np.random.uniform(0, self.height), 
-                    np.random.uniform(creature_avg_speed-(creature_speed_variance/2), creature_avg_speed+(creature_speed_variance/2)), random.choice(['linear', 'angular']),
-                    map_width=self.width, map_height=self.height)
+                    np.random.uniform(creature_avg_speed-(creature_speed_variance/2), creature_avg_speed+(creature_speed_variance/2)),
+                    vision=15, map_width=self.width, map_height=self.height)
 
             self.creatures.append(creature)
 
@@ -138,6 +174,8 @@ class Simulation:
         food_line, = ax2.plot([], [], label='Food')
         ax2.legend()
 
+        
+
         def animate(i):
             ax1.clear()
             ax2.clear()
@@ -153,6 +191,8 @@ class Simulation:
             
             for creature in self.creatures:
                 
+                creature.observe(self.food)
+
                 if creature.age != 0:
                     creature.move()
 
@@ -167,25 +207,31 @@ class Simulation:
 
                 # Your logic here to reproduce
                 # Check if creature has enough energy to reproduce
+                
                 if creature.energy >= 150:
                     # Create a new creature at the same location
-                    offspring = Creature(creature.x, creature.y, creature.speed.value, creature.movement_type, energy=75, map_width=self.width, map_height=self.height)
+                    offspring = Creature(creature.x, creature.y, creature.speed.value, energy=75, vision=creature.visibility.value, map_width=self.width, map_height=self.height)
                     offspring.mutate()
                     # print("Born")
-                    # print(offspring.speed.value)
+                    print(offspring.visibility.value)
                     new_creatures.append(offspring)
 
                     # Divide energy between parent and offspring
                     creature.energy = 75
                 
                 creature.age += 1
+
+                if creature.age > self.oldest_age:
+                    self.oldest_age = creature.age
+
+                # Mark creature visible range
+                circle = plt.Circle((creature.x, creature.y), radius=creature.visibility.value, fill=False, color='blue')
+                ax1.add_artist(circle)
             
             # Add the new creatures to the simulation
             self.creatures.extend(new_creatures)
 
             
-
-            # Also handle mutation here
 
             # Remove dead creatures
             self.creatures = [creature for creature in self.creatures if not creature.dead] 
@@ -207,6 +253,8 @@ class Simulation:
             self.tick_stats.append(self.total_tick)
             self.pop_stats.append(len(self.creatures))
             self.food_stats.append(len(self.food))
+            self.visibility_stats.append(stat.mean([obj.visibility.value for obj in self.creatures]))
+            self.mean_age_stats.append(stat.mean([obj.age for obj in self.creatures]))
 
             # Write out stats every 1000 ticks
 
@@ -220,7 +268,7 @@ class Simulation:
                 food_y = [food.y for food in self.food]
                 ax1.scatter(food_x, food_y, c='red')
 
-                ax1.set_title(f"Epoch: {self.current_generation}, Tick: {self.current_tick}, Population: {len(self.creatures)}, Food: {len(self.food)}")
+                ax1.set_title(f"Epoch: {self.current_generation}, Tick: {self.current_tick}, Population: {len(self.creatures)}, Food: {len(self.food)}, Oldest: {self.oldest_age}")
 
                 ax1.set_xlim(0, self.width)
                 ax1.set_ylim(0, self.height)
@@ -253,7 +301,10 @@ class Simulation:
                     "tick": self.tick_stats[-1000:],
                     "population": self.pop_stats[-1000:],
                     "food": self.food_stats[-1000:],
-                    "meanSpeed": self.meanspeed[-1000:]}
+                    "meanSpeed": self.meanspeed[-1000:],
+                    "meanVisibility": self.visibility_stats[-1000:],
+                    "meanAge": self.mean_age_stats[-1000:]}
+                    
                 df = pd.DataFrame(data)
                 print(self.total_tick,self.total_tick % 1000)
                 if self.total_tick == 1:
@@ -289,8 +340,9 @@ simulation = Simulation(
     max_food=1000,
     eat_radius=10,
     plot = True,
-    write_csv = True,
-    csv_loc = "D:/Simulations/outputs"
+    write_csv = False,
+    # csv_loc = "D:/Simulations/outputs"
+    csv_loc="/home/nator/Desktop"
 )
 
 simulation.run()
